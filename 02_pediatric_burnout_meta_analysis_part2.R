@@ -1,7 +1,7 @@
 # ============================================================================
 # BURNOUT AMONG PEDIATRIC SURGEONS: ADVANCED META-ANALYSIS (PART 2)
-# Version: 1.0.0
-# Authors: [Your Research Team]
+# Version: 1.0.1
+# Authors: Ricardo Twumasi; Sebastian Kirdar-Smith
 # Repository: https://github.com/ricardotwumasi/burnout-paediatric-surgery-meta
 # ============================================================================
 
