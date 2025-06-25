@@ -14,7 +14,7 @@ Full R code for reproducing our meta-analysis of the prevalance of burnout in Pa
 
 ## Overview
 
-This repository contains the complete code and data for a systematic review and meta-analysis examining burnout prevalence among paediatric surgeons. The analysis includes 14 studies capturing data from approximately 24,200 PAs published between 2018-2024.
+This repository contains the complete code and data for a systematic review and meta-analysis examining burnout prevalence among paediatric surgeons. The analysis includes 15 studies capturing data from a total of 2757 paediatric surgeons.
 
 ## 💻 Requirements
 
@@ -29,7 +29,7 @@ This repository contains the complete code and data for a systematic review and 
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/ricardotwumasi/physician-assistants-burnout-meta-analysis.git
+   git clone https://github.com/ricardotwumasi/burnout-paediatric-surgery-meta.git
    ```
 
 2. Install required R packages:
@@ -37,19 +37,10 @@ This repository contains the complete code and data for a systematic review and 
    required_packages <- c("tidyverse", "metafor")
    install.packages(required_packages)
    ```
-## Quick Start
-
-```r
-# Set working directory to the R_code folder
-setwd("R_code/")
-
-# Run main analysis (Version 1.0.6)
-source("01_PA_burnout_main_analysis_CLEAN.R")
-```
 
 ## 🤖 AI Statement
 
-This code was edited with the assistance of Claude Opus 4 (Anthropic, San Francisco: CA)
+This code was edited with the assistance of Claude Sonnet 4 (Anthropic, San Francisco: CA)
 
 ## 📜 License
 
@@ -96,9 +87,9 @@ For citing this repository, please use:
 
 <details>
 <summary>BibTeX</summary>
-<pre><code>@article{bock2025,
-  title={Burnout among physician assistants/physician associates: A systematic review and meta-analysis},
-  author={Bock, Anna; Knight, Alec; Twumasi, Ricardo},
+<pre><code>@article{kirdar-smith2025,
+  title={Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis},
+  author={Kirdar-Smith, Sebastian; Twumasi, Ricardo; Capon, Charlotte; Pearse, Callum; Smychkovich, Vasilisa; Knight, Alec},
   journal={tbc},
   year={2025},
   publisher={tbc},
@@ -108,12 +99,12 @@ For citing this repository, please use:
 </details>
 <details>
 <summary>APA</summary>
-<pre><code>Bock, A., Knight, A. & Twumasi, R. (2025). Burnout among physician assistants/physician associates: A systematic review and meta-analysis. [Journal] [Year]* </code></pre>
+<pre><code>Kirdar-Smith, S., Twumasi, R. Capon, C., Pearse, C., Smychkovich, V. & Knight, A. (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis. [Journal] [Year]* </code></pre>
 </details>
 <details>
 <summary>Vancouver</summary>
-<pre><code>Bock A, Knight A, Twumasi R. Burnout among physician assistants/physician associates: A systematic review and meta-analysis. [Journal] [Year]</code></pre>
+<pre><code>Kirdar-Smith, S, Twumasi, R Capon, C, Pearse, C, Smychkovich, V, Knight, A (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis. [Journal] [Year]*</code></pre>
 </details>
 
 ---
-Contributors: Ricardo Twumasi, Anna Bock, Alec Knight
+Contributors: Ricardo Twumasi, Sebastian Kirdar-Smith
