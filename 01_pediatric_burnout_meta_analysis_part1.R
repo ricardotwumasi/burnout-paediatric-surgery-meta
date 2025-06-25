@@ -15,7 +15,7 @@ cat("Version 1.0.0 - Initial Release\n")
 cat("Repository: https://github.com/ricardotwumasi/burnout-paediatric-surgery-meta\n\n")
 
 # Load required libraries
-required_packages <- c("metafor", "tidyverse", "meta", "dplyr", "ggplot2")
+required_packages <- c("metafor", "tidyverse")
 for (pkg in required_packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     install.packages(pkg)
