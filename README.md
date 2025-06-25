@@ -23,7 +23,6 @@ This repository contains the complete code and data for a systematic review and 
   ```R
   tidyverse
   metafor
-  viridis
   ```
 
 ## Installation
