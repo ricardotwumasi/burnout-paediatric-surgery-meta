@@ -41,7 +41,7 @@ This repository contains the complete code and data for a systematic review and 
 
 ## 🤖 AI Statement
 
-This code was edited with the assistance of Claude Sonnet 4 (Anthropic, San Francisco: CA)
+This repo was vibe coded with the assistance of Claude Sonnet 4 (Anthropic, San Francisco: CA)
 
 ## 📜 License
 
