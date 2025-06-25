@@ -51,7 +51,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Key methodological references:
 
 ```bibtex
-@book{harrer2021doing,
+@book{harrer2021,
       title     = {Doing Meta-Analysis With {R}: A Hands-On Guide},
       author    = {Harrer, Mathias and Cuijpers, Pim and Furukawa Toshi A and Ebert, David D},
       year      = {2021},
