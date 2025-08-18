@@ -1,13 +1,13 @@
 # Burnout Prevalance in Paediatric Surgeons Meta-Analysis Code
 
-[![DOI](https://zenodo.org/badge/DOI/[pending].svg)](https://doi.org/[pending])
+[![DOI](https://zenodo.org/badge/DOI/10.2139/ssrn.5382634.svg)](https://doi.org/10.2139/ssrn.5382634)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R](https://img.shields.io/badge/R-4.1.0-blue.svg)](https://cran.r-project.org/)
 
 ## Version 1.0.2
 **Updated:** August 2025
   
-Full R code for reproducing our meta-analysis of the prevalance of burnout in Paediatric Surgeons. This repository contains the code used in our systematic review and meta-analysis (Kirdar-Smith et al., in preparation) 
+Full R code for reproducing our meta-analysis of the prevalence of burnout in Paediatric Surgeons. This repository contains the code used in our systematic review and meta-analysis (Kirdar-Smith et al., in preparation) 
 
 ## Registration  
 **PROSPERO Registration:** [42025640570](https://www.crd.york.ac.uk/PROSPERO/view/CRD42025640570)
