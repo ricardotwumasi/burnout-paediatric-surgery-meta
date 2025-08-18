@@ -99,11 +99,11 @@ For citing this repository, please use:
 </details>
 <details>
 <summary>APA</summary>
-<pre><code>Kirdar-Smith, S., Twumasi, R. Capon, C., Pearse, C., Smychkovich, V. & Knight, A. (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis. SSRN. 10.2139/ssrn.5382634 * </code></pre>
+<pre><code>Kirdar-Smith, S., Twumasi, R. Capon, C., Pearse, C., Smychkovich, V. & Knight, A. (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis. SSRN. 10.2139/ssrn.5382634 </code></pre>
 </details>
 <details>
 <summary>Vancouver</summary>
-<pre><code>Kirdar-Smith, S, Twumasi, R Capon, C, Pearse, C, Smychkovich, V, Knight, A (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis.SSRN. 10.2139/ssrn.5382634 *</code></pre>
+<pre><code>Kirdar-Smith, S, Twumasi, R Capon, C, Pearse, C, Smychkovich, V, Knight, A (2025). Burnout Prevalence in Paediatric Surgeons: A Systematic Review and Meta-Analysis.SSRN. 10.2139/ssrn.5382634 </code></pre>
 </details>
 
 ---
