@@ -1,16 +1,16 @@
-﻿authors,publication_year,burnout_prevalence_percent,sd,number_of_participants,newcastle_ottawa_scale_nos_total,nos_selection,nos_comparability,nos_outcome,female_percentage,mbi_used
-Abduljabbar et al.,2021,50,,17,6,3,1,2,,MBI
-Au et al.,2017,14.6,,41,6,3,1,2,17.1,MBI
-Balch et al.,2011,31.4,,243,6,3,1,2,16.5,MBI
-Bischoff et al.,2023,13.9,,65,6,3,1,2,40,MBI
-Bratu et al.,2019,7.8,,116,4,3,0,1,,MBI
-Carter et al.,2020,37.8,,615,6,3,1,2,29,Non-MBI
-Harper et al.,2020,21.4,,70,6,3,1,2,42.9,MBI
-Liang et al.,2021,73.7,,700,7,4,1,2,6.7,Non-MBI
-Liaqat et al.,2019,15,,40,6,3,1,2,15,MBI
-North et al.,2018,25.5,,208,6,3,1,2,,MBI
-Nugent et al.,2022,51.6,,31,6,3,1,2,67.1,MBI
-Ochoa et al.,2024,18.4,,52,5,3,0,2,71.2,MBI
-Ovalle Diaz et al.,2021,26.3,22.885,177,6,3,1,2,24.6,Non-MBI
-Sarosi et al.,2021,24,,338,6,3,1,2,32,Non-MBI
-Visnjic et al.,2016,66,,44,4,2,0,2,9,Non-MBI
+﻿authors,publication_year,burnout_prevalence_percent,sd,number_of_participants,newcastle_ottawa_scale_nos_total,nos_selection,nos_comparability,nos_outcome,female_percentage,mbi_used,date_data_collected, COVID_status,country,country_income_level
+Abduljabbar et al.,2021,50,,17,6,3,1,2,,MBI,May-18, Pre-COVID,Multiple ,na
+Au et al.,2017,14.6,,41,6,3,1,2,17.1,MBI,Jan-14, Pre-COVID,USA,high
+Balch et al.,2011,31.4,,243,6,3,1,2,16.5,MBI,Jun-08, Pre-COVID,Multiple ,na
+Bischoff et al.,2023,13.9,,65,6,3,1,2,40,MBI,Jul-22, Post-COVID,France,high
+Bratu et al.,2019,7.8,,116,4,3,0,1,,MBI,2018, Pre-COVID,Multiple ,na
+Carter et al.,2020,37.8,,615,6,3,1,2,29,Non-MBI,2018, Pre-COVID,North America ,high
+Harper et al.,2020,21.4,,70,6,3,1,2,42.9,MBI,No mention, Pre-COVID,Multiple ,na
+Liang et al.,2021,73.7,,700,7,4,1,2,6.7,Non-MBI,Sep-19, Pre-COVID,China,medium
+Liaqat et al.,2019,15,,40,6,3,1,2,15,MBI,Feb-17, Pre-COVID,Pakistan,low
+North et al.,2018,25.5,,208,6,3,1,2,,MBI,2016, Pre-COVID,USA,high
+Nugent et al.,2022,51.6,,31,6,3,1,2,67.1,MBI,Dec-19, Pre-COVID,USA,high
+Ochoa et al.,2024,18.4,,52,5,3,0,2,71.2,MBI,Apr-22, Post COVID,North America ,high
+Ovalle Diaz et al.,2021,26.3,22.885,177,6,3,1,2,24.6,Non-MBI,Aug-20, Intra-COVID,Multiple ,na
+Sarosi et al.,2021,24,,338,6,3,1,2,32,Non-MBI,No mention, Pre-COVID,USA & Canada,high
+Visnjic et al.,2016,66,,44,4,2,0,2,9,Non-MBI,2016 or before, Pre-COVID ,Croatia,medium
