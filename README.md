@@ -4,8 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R](https://img.shields.io/badge/R-4.1.0-blue.svg)](https://cran.r-project.org/)
 
-## Version 1.0.2
-**Updated:** August 2025
+## Version 1.1.0
+**Updated:** October 2025
   
 Full R code for reproducing our meta-analysis of the prevalence of burnout in Paediatric Surgeons. This repository contains the code used in our systematic review and meta-analysis (Kirdar-Smith et al., in preparation) 
 
