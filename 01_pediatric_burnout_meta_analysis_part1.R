@@ -1,7 +1,8 @@
 # ============================================================================
-# COMPLETE META-ANALYSIS WITH COVID AND INCOME LEVEL SUBGROUP ANALYSES
-# Burnout Among Pediatric Surgeons: Systematic Review and Meta-Analysis
-# CORRECTED VERSION - Fixes for forest plots and FDR correction
+# BURNOUT AMONG PEDIATRIC SURGEONS: META-ANALYSIS (PART 1)
+# Version: 1.1.0
+# Authors: Ricardo Twumasi; Sebastian Kirdar-Smith
+# Repository: https://github.com/ricardotwumasi/burnout-paediatric-surgery-meta
 # ============================================================================
 
 # Load required libraries
