@@ -34,7 +34,7 @@ This repository contains the complete code and data for a systematic review and 
 
 2. Install required R packages:
    ```R
-   required_packages <- c("tidyverse", "metafor")
+   required_packages <- c("tidyverse", "metafor", "grid")
    install.packages(required_packages)
    ```
 
