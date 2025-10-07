@@ -1,6 +1,6 @@
 # ============================================================================
 # BURNOUT AMONG PEDIATRIC SURGEONS: ADVANCED META-ANALYSIS (PART 2)
-# Version: 1.0.1
+# Version: 1.1.0 - UPDATED WITH COVID AND INCOME PLOTS
 # Authors: Ricardo Twumasi; Sebastian Kirdar-Smith
 # Repository: https://github.com/ricardotwumasi/burnout-paediatric-surgery-meta
 # ============================================================================
@@ -12,10 +12,10 @@
 cat("🔥 PEDIATRIC SURGEON BURNOUT META-ANALYSIS - PART 2\n")
 cat("===================================================\n")
 cat("Advanced Analysis: Subgroups, Bias Assessment, Meta-Regression\n")
-cat("Version 1.0.0 - Initial Release\n\n")
+cat("Version 1.1.0 - Added COVID and Income Plots\n\n")
 
 # Load required libraries
-required_packages <- c("metafor", "tidyverse")
+required_packages <- c("metafor", "tidyverse", "ggplot2")
 for (pkg in required_packages) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     install.packages(pkg)
@@ -33,6 +33,9 @@ if (file.exists("pediatric_burnout_part1_workspace.RData")) {
   cat("✅ Loaded prepared data from Part 1\n")
   # Re-run main analysis if needed
   res_overall <- rma(yi, vi, data = data_final, method = "REML", test = "knha")
+} else if (file.exists("meta_analysis_workspace.RData")) {
+  load("meta_analysis_workspace.RData")
+  cat("✅ Loaded workspace from COVID/Income analysis\n")
 } else {
   stop("❌ Part 1 data not found. Please run Part 1 first.")
 }
@@ -71,7 +74,7 @@ tryCatch({
   cat("Cook's D =", round(as.numeric(influence_results$cook.d)[most_influential_idx], 3), "\n")
   
   # Save influence results
-  write.csv(influence_table, "pediatric_burnout_influence_analysis.csv", row.names = FALSE)
+  write.csv(influence_table, "outputs/pediatric_burnout_influence_analysis.csv", row.names = FALSE)
   
 }, error = function(e) {
   cat("⚠️ Error in influence analysis. Using leave-one-out analysis instead.\n")
@@ -205,146 +208,135 @@ if(nrow(mbi_data) > 1 && nrow(non_mbi_data) > 1) {
   non_mbi_est <- predict(non_mbi_res, transf = transf.ilogit)
   
   diff_estimate <- (mbi_est$pred - non_mbi_est$pred) * 100
-  cat("🔍 Difference (MBI - Non-MBI):", sprintf("%.2f%%", diff_estimate), "\n")
+  cat("\n📊 MBI vs Non-MBI difference:", sprintf("%.2f%%", diff_estimate), "\n")
+}
+
+# 5. NEW: COVID Timing Subgroup Analysis
+cat("\n--- Subgroup Analysis by COVID Timing ---\n")
+
+if("COVID_status_combined" %in% names(data_final)) {
+  covid_analysis <- perform_subgroup_analysis(data_final, "COVID_status_combined", "COVID Timing")
+} else {
+  cat("⚠️ COVID timing variable not found in dataset\n")
+  covid_analysis <- NULL
+}
+
+# 6. NEW: Country Income Level Subgroup Analysis
+cat("\n--- Subgroup Analysis by Country Income Level ---\n")
+
+if("country_income_level_clean" %in% names(data_final)) {
+  # Filter out studies with missing income data
+  data_income_filtered <- data_final %>% filter(!is.na(country_income_level_clean))
   
-  # Test for subgroup differences
-  cat("Test for subgroup differences:\n")
-  cat("QM =", sprintf("%.3f", mbi_analysis$model$QM), 
-      ", df =", mbi_analysis$model$m-1, 
-      ", p =", sprintf("%.3f", mbi_analysis$model$QMp), "\n")
-  cat("Variance explained by burnout tool: R² =", sprintf("%.1f%%", mbi_analysis$model$R2), "\n")
+  if(nrow(data_income_filtered) > 0) {
+    cat("Studies with income data:", nrow(data_income_filtered), "\n")
+    cat("Studies excluded (multi-country/missing):", nrow(data_final) - nrow(data_income_filtered), "\n\n")
+    
+    income_analysis <- perform_subgroup_analysis(data_income_filtered, 
+                                                  "country_income_level_clean", 
+                                                  "Country Income Level")
+  } else {
+    cat("⚠️ No studies with valid income level data\n")
+    income_analysis <- NULL
+  }
+} else {
+  cat("⚠️ Income level variable not found in dataset\n")
+  income_analysis <- NULL
 }
 
 # ============================================================================
-# FOREST PLOTS BY SUBGROUPS
+# FOREST PLOTS FOR SUBGROUPS
 # ============================================================================
 
-cat("\n=== CREATING SUBGROUP FOREST PLOTS ===\n")
+cat("\n=== Creating Subgroup Forest Plots ===\n")
 
-# Create forest plot by study quality
-pdf("forest_plot_by_quality.pdf", width = 12, height = 8)
-data_ordered <- data_final[order(data_final$nos_quality, -data_final$burnout_proportion), ]
-res_ordered <- rma(yi, vi, data = data_ordered, method = "REML")
-
-par(mar = c(10, 0, 4, 2))
-forest(res_ordered,
+# Forest plot by Quality
+pdf("outputs/forest_plot_by_quality.pdf", width = 10, height = 8)
+par(mar = c(5, 4, 4, 2))
+data_by_quality <- data_final[order(data_final$nos_quality), ]
+forest(rma(yi, vi, data = data_by_quality, method = "REML"),
        transf = transf.ilogit,
        at = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
-       xlim = c(-3, 2),
-       alim = c(0, 1),
+       xlim = c(-2, 3),
        xlab = "Proportion of Burnout",
-       header = c("Study", "Proportion [95% CI]"),
-       mlab = "Overall Random Effects Model",
-       ilab = cbind(data_ordered$nos_quality, data_ordered$number_of_participants),
-       ilab.xpos = c(-2.2, -1.6),
-       ilab.pos = 2,
-       cex = 0.75,
-       slab = data_ordered$study_label_clean)
-
-text(c(-2.2, -1.6), res_ordered$k + 2, 
-     c("Quality", "N"), pos = 2, cex = 0.75, font = 2)
-
+       slab = paste(data_by_quality$study_label_clean, 
+                    paste0("(", data_by_quality$nos_quality, ")")),
+       header = c("Study (Quality)", "Prevalence [95% CI]"),
+       cex = 0.75)
 dev.off()
 
-# Create forest plot by MBI status
-pdf("forest_plot_by_mbi.pdf", width = 12, height = 8)
-data_mbi_ordered <- data_final[order(data_final$mbi_used, -data_final$burnout_proportion), ]
-res_mbi_ordered <- rma(yi, vi, data = data_mbi_ordered, method = "REML")
-
-par(mar = c(10, 0, 4, 2))
-forest(res_mbi_ordered,
+# Forest plot by MBI
+pdf("outputs/forest_plot_by_mbi.pdf", width = 10, height = 8)
+par(mar = c(5, 4, 4, 2))
+data_by_mbi <- data_final[order(data_final$mbi_used), ]
+forest(rma(yi, vi, data = data_by_mbi, method = "REML"),
        transf = transf.ilogit,
        at = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
-       xlim = c(-3, 2),
-       alim = c(0, 1),
+       xlim = c(-2, 3),
        xlab = "Proportion of Burnout",
-       header = c("Study", "Proportion [95% CI]"),
-       mlab = "Overall Random Effects Model",
-       ilab = cbind(data_mbi_ordered$mbi_used, data_mbi_ordered$number_of_participants),
-       ilab.xpos = c(-2.2, -1.6),
-       ilab.pos = 2,
-       cex = 0.75,
-       slab = data_mbi_ordered$study_label_clean)
-
-text(c(-2.2, -1.6), res_mbi_ordered$k + 2, 
-     c("Tool", "N"), pos = 2, cex = 0.75, font = 2)
-
+       slab = paste(data_by_mbi$study_label_clean, 
+                    paste0("(", data_by_mbi$mbi_used, ")")),
+       header = c("Study (Tool)", "Prevalence [95% CI]"),
+       cex = 0.75)
 dev.off()
-par(mar = c(5, 4, 4, 2))  # Reset margins
 
-cat("📊 Subgroup forest plots saved\n")
+cat("✅ Subgroup forest plots created\n")
 
 # ============================================================================
 # PUBLICATION BIAS ASSESSMENT
 # ============================================================================
 
-cat("\n")
-cat(paste(rep("=", 60), collapse = ""), "\n")
-cat("PUBLICATION BIAS ASSESSMENT\n")
-cat(paste(rep("=", 60), collapse = ""), "\n")
+cat("\n=== PUBLICATION BIAS ASSESSMENT ===\n")
 
-# Create comprehensive publication bias plots
-pdf("publication_bias_assessment.pdf", width = 12, height = 8)
+# Funnel plot
+pdf("outputs/publication_bias_assessment.pdf", width = 12, height = 10)
 par(mfrow = c(2, 2), mar = c(5, 4, 4, 2))
 
-# 1. Standard funnel plot
-funnel(res_overall, xlab = "Logit Proportion", 
-       main = "Funnel Plot", cex = 0.8, pch = 19)
+# Standard funnel plot
+funnel(res_overall, main = "Funnel Plot", xlab = "Logit Proportion")
 
-# 2. Contour-enhanced funnel plot
-funnel(res_overall, level = c(90, 95, 99), shade = c("white", "gray75", "gray50"),
-       xlab = "Logit Proportion", main = "Contour-Enhanced Funnel Plot")
+# Contour-enhanced funnel plot
+funnel(res_overall, level = c(90, 95, 99), shade = c("white", "gray", "darkgray"),
+       refline = 0, main = "Contour-Enhanced Funnel Plot")
 
-# 3. Egger's Regression Test
+# Egger's test
 egger_test <- regtest(res_overall, model = "lm")
-cat("\n--- Egger's Regression Test ---\n")
+cat("Egger's regression test for funnel plot asymmetry:\n")
 print(egger_test)
-egger_interpretation <- ifelse(egger_test$pval < 0.05, 
-                              "Significant asymmetry detected (p < 0.05)", 
-                              "No significant asymmetry detected (p ≥ 0.05)")
-cat("🔍 Interpretation:", egger_interpretation, "\n")
 
-# 4. Trim-and-Fill Analysis
-trim_fill <- trimfill(res_overall)
-cat("\n--- Trim-and-Fill Analysis ---\n")
-print(trim_fill)
-
-# Plot trim-and-fill results
-funnel(trim_fill, xlab = "Logit Proportion", 
-       main = "Trim-and-Fill Analysis")
-
-# Calculate adjusted estimate
-tf_est <- predict(trim_fill, transf = transf.ilogit)
-cat("📊 Adjusted estimate after trim-and-fill:", 
-    sprintf("%.2f%% (95%% CI: %.2f%% to %.2f%%)", 
-            tf_est$pred * 100, tf_est$ci.lb * 100, tf_est$ci.ub * 100), "\n")
-
-# Check if studies were trimmed
-studies_trimmed <- max(0, trim_fill$k - nrow(data_final))
-cat("Studies estimated to be missing:", studies_trimmed, "\n")
-
-# 5. Rank Correlation Test (Begg's test)
+# Begg's rank correlation test
 rank_test <- ranktest(res_overall)
-cat("\n--- Rank Correlation Test (Begg's Test) ---\n")
+cat("\nBegg's rank correlation test:\n")
 print(rank_test)
-rank_interpretation <- ifelse(rank_test$pval < 0.05, 
-                              "Significant rank correlation detected (p < 0.05)", 
-                              "No significant rank correlation detected (p ≥ 0.05)")
-cat("🔍 Interpretation:", rank_interpretation, "\n")
+
+# Trim-and-fill analysis
+taf <- trimfill(res_overall)
+funnel(taf, main = "Trim-and-Fill Analysis")
+cat("\nTrim-and-fill analysis:\n")
+print(taf)
+studies_trimmed <- taf$k0
+
+# Influence plot
+plot(influence_results)
 
 dev.off()
 par(mfrow = c(1, 1))
 
-# Create publication bias summary
-bias_summary <- data.frame(
-  Test = c("Egger's Regression", "Begg's Rank", "Trim-and-Fill"),
-  P_Value = c(egger_test$pval, rank_test$pval, NA),
-  Result = c(egger_interpretation, rank_interpretation, 
-             paste("Estimated missing studies:", studies_trimmed)),
+# Save bias assessment results
+bias_results <- data.frame(
+  Test = c("Egger's test", "Begg's test", "Trim-and-fill"),
+  Statistic = c(egger_test$zval, rank_test$tau, NA),
+  P_value = c(egger_test$pval, rank_test$pval, NA),
+  Result = c(
+    ifelse(egger_test$pval < 0.05, "Significant asymmetry", "No significant asymmetry"),
+    ifelse(rank_test$pval < 0.05, "Significant correlation", "No significant correlation"),
+    paste(studies_trimmed, "studies trimmed")
+  ),
   stringsAsFactors = FALSE
 )
+write.csv(bias_results, "outputs/pediatric_burnout_bias_assessment.csv", row.names = FALSE)
 
-write.csv(bias_summary, "pediatric_burnout_bias_assessment.csv", row.names = FALSE)
+cat("📊 Publication bias assessment complete\n")
 
 # ============================================================================
 # SENSITIVITY ANALYSIS
@@ -353,187 +345,162 @@ write.csv(bias_summary, "pediatric_burnout_bias_assessment.csv", row.names = FAL
 cat("\n=== SENSITIVITY ANALYSIS ===\n")
 
 # Leave-one-out analysis
-loo_results <- leave1out(res_overall)
-
-# Create sensitivity analysis summary
-loo_summary <- data.frame(
-  Study_Removed = data_final$study_label_clean,
-  Estimate_Without = sprintf("%.2f%%", transf.ilogit(loo_results$estimate) * 100),
-  CI_Lower = sprintf("%.2f%%", transf.ilogit(loo_results$ci.lb) * 100),
-  CI_Upper = sprintf("%.2f%%", transf.ilogit(loo_results$ci.ub) * 100),
-  I2_Without = sprintf("%.1f%%", loo_results$I2),
+loo_results <- leave1out(res_overall, transf = transf.ilogit)
+loo_data <- data.frame(
+  Study = data_final$study_label_clean,
+  Estimate = sprintf("%.2f%%", loo_results$estimate * 100),
+  CI_Lower = sprintf("%.2f%%", loo_results$ci.lb * 100),
+  CI_Upper = sprintf("%.2f%%", loo_results$ci.ub * 100),
+  I2 = sprintf("%.1f%%", loo_results$I2),
   stringsAsFactors = FALSE
 )
 
-# Find studies that substantially change the overall estimate
+cat("📊 Leave-one-out sensitivity analysis:\n")
+cat("Range of estimates:", 
+    sprintf("%.2f%% to %.2f%%", min(loo_results$estimate * 100), max(loo_results$estimate * 100)), "\n")
+
+# Find most influential
 original_est <- transf.ilogit(res_overall$b[1]) * 100
-loo_ests <- transf.ilogit(loo_results$estimate) * 100
-changes <- abs(loo_ests - original_est)
+est_changes <- abs(loo_results$estimate * 100 - original_est)
+most_influential <- which.max(est_changes)
 
-substantial_change_threshold <- 2  # 2% threshold
-substantial_change_idx <- which(changes > substantial_change_threshold)
+cat("Most influential study:", data_final$study_label_clean[most_influential], "\n")
+cat("Change when removed:", sprintf("%.2f%%", est_changes[most_influential]), "\n")
 
-if(length(substantial_change_idx) > 0) {
-  cat("📊 Studies causing >", substantial_change_threshold, "% change in overall estimate:\n")
-  print(loo_summary[substantial_change_idx, ])
+# Save sensitivity results
+write.csv(loo_data, "outputs/pediatric_burnout_sensitivity_analysis.csv", row.names = FALSE)
+
+# ============================================================================
+# META-REGRESSION ANALYSES
+# ============================================================================
+
+cat("\n=== META-REGRESSION ANALYSES ===\n")
+
+# 1. Publication year
+cat("\n--- Meta-Regression: Publication Year ---\n")
+meta_reg_year <- rma(yi, vi, mods = ~ publication_year, data = data_final, method = "REML")
+print(meta_reg_year)
+
+# 2. Sample size
+cat("\n--- Meta-Regression: Sample Size ---\n")
+meta_reg_size <- rma(yi, vi, mods = ~ number_of_participants, data = data_final, method = "REML")
+print(meta_reg_size)
+
+# 3. Study quality (NOS total)
+cat("\n--- Meta-Regression: Study Quality (NOS) ---\n")
+meta_reg_nos <- rma(yi, vi, mods = ~ newcastle_ottawa_scale_nos_total, data = data_final, method = "REML")
+print(meta_reg_nos)
+
+# 4. Gender percentage (if available)
+if(sum(!is.na(data_final$female_percentage_numeric)) > 5) {
+  cat("\n--- Meta-Regression: Female Percentage ---\n")
+  gender_data <- data_final[!is.na(data_final$female_percentage_numeric), ]
+  meta_reg_gender <- rma(yi, vi, mods = ~ female_percentage_numeric, 
+                         data = gender_data, method = "REML")
+  print(meta_reg_gender)
 } else {
-  cat("✅ No studies cause >", substantial_change_threshold, "% change in overall estimate\n")
-}
-
-# Most impactful study
-max_change_idx <- which.max(changes)
-cat("\n🎯 Most impactful study when removed:", data_final$study_label_clean[max_change_idx], "\n")
-cat("Change in estimate:", sprintf("%.2f%%", changes[max_change_idx]), "\n")
-cat("Original:", sprintf("%.2f%%", original_est), "→ Without:", 
-    sprintf("%.2f%%", loo_ests[max_change_idx]), "\n")
-
-# Save sensitivity analysis results
-write.csv(loo_summary, "pediatric_burnout_sensitivity_analysis.csv", row.names = FALSE)
-
-# ============================================================================
-# GENDER DATA PREPARATION AND ANALYSIS
-# ============================================================================
-
-cat("\n=== GENDER DATA ANALYSIS ===\n")
-
-# Convert female_percentage to numeric, handling missing/non-numeric values
-data_final$female_percentage_numeric <- suppressWarnings({
-  ifelse(is.na(data_final$female_percentage) | 
-         data_final$female_percentage == "" | 
-         data_final$female_percentage == "n/a", 
-         NA, 
-         as.numeric(data_final$female_percentage))
-})
-
-# Check gender data availability
-gender_available <- !is.na(data_final$female_percentage_numeric)
-cat("📊 Studies with gender data:", sum(gender_available), "out of", nrow(data_final), "\n")
-
-if(sum(gender_available) > 0) {
-  cat("Female percentage range:", 
-      range(data_final$female_percentage_numeric, na.rm = TRUE), "%\n")
-  
-  # Gender data summary
-  gender_summary <- data.frame(
-    Study = data_final$study_label_clean,
-    Female_Percent = ifelse(is.na(data_final$female_percentage_numeric), 
-                            "Missing", 
-                            paste0(data_final$female_percentage_numeric, "%")),
-    Has_Gender_Data = !is.na(data_final$female_percentage_numeric),
-    stringsAsFactors = FALSE
-  )
-  
-  print(gender_summary)
-  write.csv(gender_summary, "pediatric_burnout_gender_data.csv", row.names = FALSE)
-} else {
-  cat("⚠️ No usable gender data available\n")
-}
-
-# ============================================================================
-# META-REGRESSION ANALYSIS
-# ============================================================================
-
-cat("\n")
-cat(paste(rep("=", 60), collapse = ""), "\n")
-cat("META-REGRESSION ANALYSIS\n")
-cat(paste(rep("=", 60), collapse = ""), "\n")
-
-# Function to perform and report meta-regression
-perform_meta_regression <- function(data, predictor, predictor_name) {
-  cat("\n--- Meta-Regression:", predictor_name, "---\n")
-  
-  formula_str <- paste("~", predictor)
-  meta_reg <- rma(yi, vi, mods = as.formula(formula_str), data = data, method = "REML")
-  
-  print(meta_reg)
-  cat("R² =", sprintf("%.1f%%", meta_reg$R2), "\n")
-  
-  significance <- ifelse(meta_reg$pval[2] < 0.05, 
-                        paste("Significant predictor (p =", sprintf("%.3f", meta_reg$pval[2]), ")"),
-                        paste("Not significant (p =", sprintf("%.3f", meta_reg$pval[2]), ")"))
-  cat("🔍 Interpretation:", significance, "\n")
-  
-  return(meta_reg)
-}
-
-# 1. Univariate meta-regressions
-cat("\n--- Univariate Meta-Regressions ---\n")
-
-meta_reg_year <- perform_meta_regression(data_final, "publication_year", "Publication Year")
-meta_reg_size <- perform_meta_regression(data_final, "number_of_participants", "Sample Size")
-meta_reg_nos <- perform_meta_regression(data_final, "newcastle_ottawa_scale_nos_total", "NOS Total Score")
-
-# Individual NOS components
-meta_reg_selection <- perform_meta_regression(data_final, "nos_selection", "NOS Selection")
-meta_reg_comparability <- perform_meta_regression(data_final, "nos_comparability", "NOS Comparability")
-meta_reg_outcome <- perform_meta_regression(data_final, "nos_outcome", "NOS Outcome")
-
-# Gender meta-regression (if data available)
-if(sum(!is.na(data_final$female_percentage_numeric)) >= 3) {
-  meta_reg_gender <- perform_meta_regression(data_final, "female_percentage_numeric", 
-                                           paste("Female Percentage (", sum(!is.na(data_final$female_percentage_numeric)), "studies)"))
-} else {
-  cat("\n⚠️ Insufficient gender data for meta-regression\n")
   meta_reg_gender <- NULL
+  cat("\n⚠️ Insufficient data for gender meta-regression\n")
 }
 
-# MBI as moderator
-meta_reg_mbi <- perform_meta_regression(data_final, "mbi_used", "MBI Usage")
+# 5. NEW: COVID Timing Meta-Regression
+if("COVID_status_combined" %in% names(data_final)) {
+  cat("\n--- Meta-Regression: COVID Timing ---\n")
+  meta_reg_covid <- rma(yi, vi, mods = ~ COVID_status_combined, 
+                        data = data_final, method = "REML", test = "knha")
+  print(meta_reg_covid)
+  cat(sprintf("Variance explained by COVID timing: R² = %.1f%%\n", meta_reg_covid$R2))
+} else {
+  meta_reg_covid <- NULL
+}
 
-# ============================================================================
-# MULTIVARIABLE META-REGRESSION
-# ============================================================================
+# 6. NEW: Country Income Level Meta-Regression
+if("country_income_level_clean" %in% names(data_final)) {
+  cat("\n--- Meta-Regression: Country Income Level ---\n")
+  
+  # Use only studies with valid income data
+  data_income_mr <- data_final %>% 
+    filter(!is.na(country_income_level_clean)) %>%
+    filter(country_income_level_clean %in% c("high", "medium"))  # Exclude low if only 1 study
+  
+  if(nrow(data_income_mr) > 2) {
+    meta_reg_income <- rma(yi, vi, mods = ~ country_income_level_clean, 
+                          data = data_income_mr, method = "REML", test = "knha")
+    print(meta_reg_income)
+    cat(sprintf("Variance explained by income level: R² = %.1f%%\n", meta_reg_income$R2))
+  } else {
+    meta_reg_income <- NULL
+    cat("⚠️ Insufficient studies for income level meta-regression\n")
+  }
+} else {
+  meta_reg_income <- NULL
+}
 
-cat("\n--- Multivariable Meta-Regression ---\n")
+# Multivariable models
+cat("\n--- Multivariable Meta-Regression Models ---\n")
 
-# Model without gender
-meta_reg_multi_no_gender <- rma(yi, vi, 
-                                mods = ~ publication_year + number_of_participants + newcastle_ottawa_scale_nos_total,
-                                data = data_final, method = "REML")
+# Model 1: Year + Quality
+model_1 <- rma(yi, vi, mods = ~ publication_year + newcastle_ottawa_scale_nos_total, 
+               data = data_final, method = "REML")
+cat("\nModel 1: Year + Quality\n")
+print(model_1)
 
-cat("\nMultivariable model (Year + Sample Size + NOS Total):\n")
-print(meta_reg_multi_no_gender)
-cat("R² =", sprintf("%.1f%%", meta_reg_multi_no_gender$R2), "\n")
+# Model 2: Size + Quality
+model_2 <- rma(yi, vi, mods = ~ number_of_participants + newcastle_ottawa_scale_nos_total, 
+               data = data_final, method = "REML")
+cat("\nModel 2: Sample Size + Quality\n")
+print(model_2)
 
-# Quality + MBI model
-meta_reg_quality_mbi <- rma(yi, vi, 
-                            mods = ~ nos_quality + mbi_used, 
-                            data = data_final, method = "REML")
-cat("\n--- Quality + MBI Model ---\n")
-print(meta_reg_quality_mbi)
-cat("R² =", sprintf("%.1f%%", meta_reg_quality_mbi$R2), "\n")
+# Model 3: MBI + Quality
+model_3 <- rma(yi, vi, mods = ~ mbi_used + newcastle_ottawa_scale_nos_total, 
+               data = data_final, method = "REML")
+cat("\nModel 3: MBI + Quality\n")
+print(model_3)
 
-# Full model with all predictors
-meta_reg_full <- rma(yi, vi, 
-                     mods = ~ mbi_used + newcastle_ottawa_scale_nos_total + 
-                       number_of_participants + publication_year,
-                     data = data_final, method = "REML")
-cat("\n--- Full Multivariable Model ---\n")
-print(meta_reg_full)
-cat("R² =", sprintf("%.1f%%", meta_reg_full$R2), "\n")
+# Model 4: NEW - COVID + MBI (if COVID available)
+if(!is.null(meta_reg_covid)) {
+  model_4 <- rma(yi, vi, mods = ~ COVID_status_combined + mbi_used, 
+                 data = data_final, method = "REML")
+  cat("\nModel 4: COVID + MBI\n")
+  print(model_4)
+} else {
+  model_4 <- NULL
+}
+
+# Model 5: NEW - Income + MBI (if income available)
+if(!is.null(meta_reg_income)) {
+  model_5 <- rma(yi, vi, mods = ~ country_income_level_clean + mbi_used, 
+                 data = data_income_mr, method = "REML")
+  cat("\nModel 5: Income Level + MBI\n")
+  print(model_5)
+} else {
+  model_5 <- NULL
+}
 
 # Model comparison
 models_list <- list(
-  "Null model" = res_overall,
-  "Publication year" = meta_reg_year,
-  "Sample size" = meta_reg_size,
-  "NOS total" = meta_reg_nos,
-  "MBI only" = meta_reg_mbi,
-  "Quality + MBI" = meta_reg_quality_mbi,
-  "Multivariable" = meta_reg_multi_no_gender,
-  "Full model" = meta_reg_full
+  "Year only" = meta_reg_year,
+  "Size only" = meta_reg_size,
+  "NOS only" = meta_reg_nos,
+  "Year + NOS" = model_1,
+  "Size + NOS" = model_2,
+  "MBI + NOS" = model_3
 )
 
-# Add gender model if available
-if(!is.null(meta_reg_gender)) {
-  models_list[["Female percentage"]] <- meta_reg_gender
+# Add COVID and Income models if available
+if(!is.null(meta_reg_covid)) {
+  models_list[["COVID only"]] <- meta_reg_covid
+  if(!is.null(model_4)) models_list[["COVID + MBI"]] <- model_4
+}
+if(!is.null(meta_reg_income)) {
+  models_list[["Income only"]] <- meta_reg_income
+  if(!is.null(model_5)) models_list[["Income + MBI"]] <- model_5
 }
 
-# AIC comparison
 aic_comparison <- data.frame(
   Model = names(models_list),
-  AIC = round(sapply(models_list, AIC), 2),
-  R_squared = round(sapply(models_list, function(x) ifelse(is.null(x$R2), 0, x$R2)), 1),
+  AIC = sapply(models_list, AIC),
+  R_squared = sapply(models_list, function(x) ifelse(is.null(x$R2), 0, x$R2)),
   Parameters = sapply(models_list, function(x) x$p),
   stringsAsFactors = FALSE
 )
@@ -546,15 +513,82 @@ cat("\n🏆 Best model (lowest AIC):", aic_comparison$Model[1], "\n")
 cat("📊 Models with ΔAICc < 2 are considered equally supported\n")
 
 # Save model comparison
-write.csv(aic_comparison, "pediatric_burnout_model_comparison.csv", row.names = FALSE)
+write.csv(aic_comparison, "outputs/pediatric_burnout_model_comparison.csv", row.names = FALSE)
+
+# ========================= FDR helper (BH) =========================
+suppressPackageStartupMessages({ library(dplyr) })
+
+.collect_tests <- function() {
+  tests <- list()
+  add <- function(name, p, family, note = NA_character_) {
+    if (!is.null(p) && is.finite(p)) {
+      tests[[length(tests) + 1]] <<- data.frame(
+        Test   = name,
+        p_raw  = as.numeric(p),
+        Family = family,
+        Note   = note,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  
+  ## ===== PRIMARY (confirmatory) subgroup tests =====
+  if (exists("subgroup_covid_2way"))   add("COVID Timing (Pre vs During/Post)",  subgroup_covid_2way$QMp,  "Primary")
+  if (exists("subgroup_income_2way"))  add("Income Level (High vs Medium)",      subgroup_income_2way$QMp, "Primary")
+  
+  ## ===== EXPLORATORY moderators / meta-regressions =====
+  if (exists("meta_reg_year"))         add("Meta-reg: Publication year",         meta_reg_year$QMp,        "Moderators")
+  if (exists("meta_reg_size"))         add("Meta-reg: Sample size",              meta_reg_size$QMp,        "Moderators")
+  if (exists("meta_reg_nos"))          add("Meta-reg: Study quality (NOS)",      meta_reg_nos$QMp,         "Moderators")
+  if (exists("meta_reg_gender") && !is.null(meta_reg_gender))
+    add("Meta-reg: Female %",                 meta_reg_gender$QMp,      "Moderators")
+  if (exists("meta_reg_covid")  && !is.null(meta_reg_covid))
+    add("Meta-reg: COVID timing",             meta_reg_covid$QMp,       "Moderators")
+  if (exists("meta_reg_income") && !is.null(meta_reg_income))
+    add("Meta-reg: Country income level",     meta_reg_income$QMp,      "Moderators")
+  
+  ## ===== SMALL-STUDY/PUBLICATION BIAS =====
+  if (exists("egger_test"))            add("Egger’s regression test",            egger_test$pval,          "Bias")
+  if (exists("rank_test"))             add("Begg’s rank correlation test",       rank_test$pval,           "Bias")
+  
+  ## Bind & adjust (BH) within each family
+  if (length(tests) == 0) return(invisible(NULL))
+  out <- dplyr::bind_rows(tests) %>%
+    dplyr::group_by(Family) %>%
+    dplyr::mutate(
+      p_FDR    = p.adjust(p_raw, method = "BH"),
+      q        = p_FDR,
+      sig_unadj= p_raw < 0.05,
+      sig_FDR  = p_FDR < 0.05
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(match(Family, c("Primary","Moderators","Bias")), p_FDR, p_raw)
+  out
+}
+
+fdr_table <- .collect_tests()
+
+if (!is.null(fdr_table)) {
+  cat("\n=== FDR (BH) summary by family ===\n")
+  print(dplyr::mutate(fdr_table,
+                      p_raw = sprintf('%.4f', p_raw),
+                      p_FDR = sprintf('%.4f', p_FDR),
+                      q     = sprintf('%.4f', q)))
+  if (!dir.exists("outputs")) dir.create("outputs", recursive = TRUE)
+  utils::write.csv(fdr_table, "outputs/fdr_corrected_pvalues.csv", row.names = FALSE)
+  cat("\nSaved: outputs/fdr_corrected_pvalues.csv\n")
+} else {
+  cat("\n[Note] No tests collected for FDR adjustment.\n")
+}
+# ======================= end FDR helper (BH) =======================
 
 # ============================================================================
-# REGRESSION PLOTS
+# META-REGRESSION PLOTS (ENHANCED WITH COVID AND INCOME)
 # ============================================================================
 
-cat("\n=== Creating Meta-Regression Plots ===\n")
+cat("\n=== Creating Enhanced Meta-Regression Plots ===\n")
 
-pdf("meta_regression_plots.pdf", width = 12, height = 8)
+pdf("outputs/meta_regression_plots.pdf", width = 14, height = 10)
 par(mfrow = c(2, 3), mar = c(5, 4, 4, 2))
 
 # Publication year
@@ -575,35 +609,193 @@ regplot(meta_reg_nos, xlab = "Newcastle-Ottawa Scale Total", ylab = "Logit Propo
 # Female percentage (if available)
 if(!is.null(meta_reg_gender)) {
   regplot(meta_reg_gender, xlab = "Female Percentage (%)", ylab = "Logit Proportion",
-          main = paste("Meta-Regression: Female %"),
+          main = "Meta-Regression: Female %",
           pch = 19, col = "purple", shade = TRUE)
 }
 
-# Bubble plot: Sample size vs Year
-plot(data_final$publication_year, data_final$number_of_participants,
-     cex = 1/sqrt(data_final$vi), 
-     pch = 19, col = rgb(0.5, 0.5, 0.5, 0.7),
-     xlab = "Publication Year", ylab = "Sample Size",
-     main = "Study Characteristics\n(Bubble size = Precision)")
+# NEW: COVID Timing (if available)
+if(!is.null(meta_reg_covid)) {
+  # Create boxplot for categorical variable
+  covid_prev_data <- data_final %>%
+    mutate(prev_pct = burnout_proportion * 100)
+  
+  boxplot(prev_pct ~ COVID_status_combined, data = covid_prev_data,
+          col = c("lightblue", "lightcoral"),
+          main = "Burnout by COVID Timing",
+          xlab = "COVID Period",
+          ylab = "Burnout Prevalence (%)",
+          las = 1)
+  
+  # Add points
+  points(jitter(as.numeric(as.factor(covid_prev_data$COVID_status_combined)), 0.3), 
+         covid_prev_data$prev_pct,
+         pch = 19, col = rgb(0, 0, 0, 0.5))
+  
+  # Add p-value
+  text(x = 1.5, y = max(covid_prev_data$prev_pct, na.rm = TRUE) * 0.95,
+       labels = sprintf("p = %.3f", meta_reg_covid$QMp),
+       pos = 3, cex = 1.2, font = 2)
+}
 
-# Gender vs Burnout scatter (if available)
-if(sum(!is.na(data_final$female_percentage_numeric)) > 2) {
-  gender_data <- data_final[!is.na(data_final$female_percentage_numeric), ]
-  plot(gender_data$female_percentage_numeric, gender_data$burnout_proportion * 100,
-       pch = 19, col = "orange", cex = 1.2,
-       xlab = "Female Percentage (%)", ylab = "Burnout Rate (%)",
-       main = "Gender vs Burnout Rate")
-  # Add regression line
-  if(nrow(gender_data) > 2) {
-    abline(lm(burnout_proportion * 100 ~ female_percentage_numeric, data = gender_data), 
-           col = "red", lwd = 2)
-  }
+# NEW: Income Level (if available)
+if(!is.null(meta_reg_income)) {
+  # Create boxplot for categorical variable
+  income_prev_data <- data_income_mr %>%
+    mutate(prev_pct = burnout_proportion * 100,
+           income_label = tools::toTitleCase(country_income_level_clean))
+  
+  boxplot(prev_pct ~ income_label, data = income_prev_data,
+          col = c("lightgreen", "lightyellow"),
+          main = "Burnout by Income Level",
+          xlab = "Country Income Level",
+          ylab = "Burnout Prevalence (%)",
+          las = 1)
+  
+  # Add points
+  points(jitter(as.numeric(as.factor(income_prev_data$income_label)), 0.3), 
+         income_prev_data$prev_pct,
+         pch = 19, col = rgb(0, 0, 0, 0.5))
+  
+  # Add p-value
+  text(x = 1.5, y = max(income_prev_data$prev_pct, na.rm = TRUE) * 0.95,
+       labels = sprintf("p = %.3f", meta_reg_income$QMp),
+       pos = 3, cex = 1.2, font = 2)
 }
 
 dev.off()
 par(mfrow = c(1, 1))
 
-cat("📊 Meta-regression plots saved\n")
+cat("📊 Enhanced meta-regression plots saved\n")
+
+# ============================================================================
+# ADDITIONAL VISUALIZATION: COVID AND INCOME FOREST PLOTS
+# ============================================================================
+
+cat("\n=== Creating COVID and Income Specific Visualizations ===\n")
+
+# COVID timing forest plot with subgroups
+if(!is.null(meta_reg_covid)) {
+  pdf("outputs/forest_plot_covid_detailed.pdf", width = 12, height = 10)
+  par(mar = c(6, 4, 4, 2))
+  
+  data_covid_ordered <- data_final %>%
+    arrange(COVID_status_combined, publication_year)
+  
+  metafor::forest(rma(yi, vi, data = data_covid_ordered, method = "REML"),
+         transf = transf.ilogit,
+         at = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+         xlim = c(-2, 3),
+         alim = c(0, 1),
+         xlab = "Burnout Prevalence",
+         slab = paste(data_covid_ordered$study_label_clean,
+                      paste0("(", data_covid_ordered$COVID_status_combined, ")")),
+         header = c("Study (COVID Period)", "Prevalence [95% CI]"),
+         cex = 0.75,
+         main = "Burnout Prevalence by COVID Timing")
+  
+  dev.off()
+  cat("✅ COVID forest plot created\n")
+}
+
+# Income level forest plot with subgroups
+if(!is.null(meta_reg_income)) {
+  pdf("outputs/forest_plot_income_detailed.pdf", width = 12, height = 10)
+  par(mar = c(6, 4, 4, 2))
+  
+  data_income_ordered <- data_income_mr %>%
+    arrange(country_income_level_clean, publication_year) %>%
+    mutate(income_label = tools::toTitleCase(country_income_level_clean))
+  
+  metafor::forest(rma(yi, vi, data = data_income_ordered, method = "REML"),
+         transf = transf.ilogit,
+         at = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+         xlim = c(-2, 3),
+         alim = c(0, 1),
+         xlab = "Burnout Prevalence",
+         slab = paste(data_income_ordered$study_label_clean,
+                      paste0("(", data_income_ordered$income_label, ")")),
+         header = c("Study (Income Level)", "Prevalence [95% CI]"),
+         cex = 0.75,
+         main = "Burnout Prevalence by Country Income Level")
+  
+  dev.off()
+  cat("✅ Income level forest plot created\n")
+}
+
+# ============================================================================
+# ADVANCED VISUALIZATION: ggplot2 PLOTS FOR COVID AND INCOME
+# ============================================================================
+
+cat("\n=== Creating ggplot2 Visualizations ===\n")
+
+# COVID timing comparison plot
+if(!is.null(meta_reg_covid)) {
+  covid_plot_data <- data_final %>%
+    mutate(
+      prev_pct = burnout_proportion * 100,
+      ci_lower = ci_lb * 100,
+      ci_upper = ci_ub * 100,
+      weight = 1/sqrt(vi)
+    )
+  
+  p_covid <- ggplot(covid_plot_data, aes(x = COVID_status_combined, y = prev_pct)) +
+    geom_jitter(aes(size = weight), width = 0.2, alpha = 0.6, color = "steelblue") +
+    geom_boxplot(alpha = 0.3, outlier.shape = NA, fill = "lightblue") +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.4) +
+    labs(
+      title = "Burnout Prevalence by COVID Timing",
+      subtitle = sprintf("QM = %.2f, p = %.3f | R² = %.1f%%", 
+                        meta_reg_covid$QM, meta_reg_covid$QMp, meta_reg_covid$R2),
+      x = "COVID Period",
+      y = "Burnout Prevalence (%)",
+      size = "Study Weight"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      plot.subtitle = element_text(size = 11, color = "gray30"),
+      legend.position = "right"
+    )
+  
+  ggsave("outputs/covid_comparison_ggplot.pdf", p_covid, 
+         width = 10, height = 7)
+  cat("✅ COVID ggplot2 visualization created\n")
+}
+
+# Income level comparison plot
+if(!is.null(meta_reg_income)) {
+  income_plot_data <- data_income_mr %>%
+    mutate(
+      prev_pct = burnout_proportion * 100,
+      ci_lower = ci_lb * 100,
+      ci_upper = ci_ub * 100,
+      weight = 1/sqrt(vi),
+      income_label = tools::toTitleCase(country_income_level_clean)
+    )
+  
+  p_income <- ggplot(income_plot_data, aes(x = income_label, y = prev_pct)) +
+    geom_jitter(aes(size = weight), width = 0.2, alpha = 0.6, color = "darkgreen") +
+    geom_boxplot(alpha = 0.3, outlier.shape = NA, fill = "lightgreen") +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.4) +
+    labs(
+      title = "Burnout Prevalence by Country Income Level",
+      subtitle = sprintf("QM = %.2f, p = %.3f | R² = %.1f%%", 
+                        meta_reg_income$QM, meta_reg_income$QMp, meta_reg_income$R2),
+      x = "Country Income Level",
+      y = "Burnout Prevalence (%)",
+      size = "Study Weight"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      plot.subtitle = element_text(size = 11, color = "gray30"),
+      legend.position = "right"
+    )
+  
+  ggsave("outputs/income_comparison_ggplot.pdf", p_income, 
+         width = 10, height = 7)
+  cat("✅ Income level ggplot2 visualization created\n")
+}
 
 # ============================================================================
 # CUMULATIVE META-ANALYSIS
@@ -632,12 +824,12 @@ cat("📊 Cumulative results by publication year:\n")
 print(cum_results)
 
 # Save cumulative results
-write.csv(cum_results, "pediatric_burnout_cumulative_analysis.csv", row.names = FALSE)
+write.csv(cum_results, "outputs/pediatric_burnout_cumulative_analysis.csv", row.names = FALSE)
 
 # Create cumulative forest plot
-pdf("cumulative_forest_plot.pdf", width = 10, height = 8)
+pdf("outputs/cumulative_forest_plot.pdf", width = 10, height = 8)
 par(mar = c(6, 0, 4, 2))
-forest(cum_ma,
+metafor::forest(cum_ma,
        transf = transf.ilogit,
        at = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
        xlim = c(-2.5, 2),
@@ -678,11 +870,36 @@ significant_mods <- c()
 if(quality_analysis$model$QMp < 0.05) significant_mods <- c(significant_mods, "Study Quality")
 if(mbi_analysis$model$QMp < 0.05) significant_mods <- c(significant_mods, "Burnout Measurement")
 if(meta_reg_nos$pval[2] < 0.05) significant_mods <- c(significant_mods, "NOS Score")
+if(!is.null(meta_reg_covid) && meta_reg_covid$QMp < 0.05) significant_mods <- c(significant_mods, "COVID Timing")
+if(!is.null(meta_reg_income) && meta_reg_income$QMp < 0.05) significant_mods <- c(significant_mods, "Income Level")
 
 if(length(significant_mods) > 0) {
   cat("• Significant moderators:", paste(significant_mods, collapse = ", "), "\n")
 } else {
   cat("• No significant moderators identified\n")
+}
+
+# COVID findings (if available)
+if(!is.null(covid_analysis)) {
+  cat("\n🦠 COVID TIMING:\n")
+  for(period in names(covid_analysis$results)) {
+    result <- covid_analysis$results[[period]]
+    cat(sprintf("• %s: %.1f%% (k=%d)\n", period, result$estimate, result$n_studies))
+  }
+  cat(sprintf("• Test for difference: p = %.3f\n", meta_reg_covid$QMp))
+}
+
+# Income findings (if available)
+if(!is.null(income_analysis)) {
+  cat("\n💰 COUNTRY INCOME LEVEL:\n")
+  for(level in names(income_analysis$results)) {
+    result <- income_analysis$results[[level]]
+    cat(sprintf("• %s: %.1f%% (k=%d)\n", 
+                tools::toTitleCase(level), result$estimate, result$n_studies))
+  }
+  if(!is.null(meta_reg_income)) {
+    cat(sprintf("• Test for difference: p = %.3f\n", meta_reg_income$QMp))
+  }
 }
 
 # Publication bias
@@ -699,15 +916,30 @@ cat("• R² =", sprintf("%.1f%%", aic_comparison$R_squared[1]), "\n")
 
 # Clinical implications
 cat("\n🏥 CLINICAL IMPLICATIONS:\n")
-cat("• Burnout affects approximately", round(overall_results$pred * 100), "% of pediatric healthcare workers\n")
+cat("• Burnout affects approximately", round(overall_results$pred * 100), "% of pediatric surgeons\n")
 cat("• Wide variation between studies suggests multiple contributing factors\n")
-cat("• Study methodology influences findings - standardization needed\n")
+if(!is.null(meta_reg_covid)) {
+  cat("• COVID pandemic timing shows", 
+      ifelse(meta_reg_covid$QMp < 0.05, "significant", "no significant"),
+      "association with burnout rates\n")
+}
+if(!is.null(meta_reg_income)) {
+  cat("• Country income level shows",
+      ifelse(meta_reg_income$QMp < 0.05, "significant", "no significant"),
+      "differences in burnout prevalence\n")
+}
 
 # Recommendations
 cat("\n💡 RECOMMENDATIONS:\n")
 cat("• Standardize burnout measurement tools (preferably MBI)\n")
 cat("• Investigate subspecialty and training level differences\n")
 cat("• Consider workplace and demographic factors\n")
+if(!is.null(meta_reg_covid)) {
+  cat("• Monitor long-term effects of COVID-19 pandemic on burnout\n")
+}
+if(!is.null(meta_reg_income)) {
+  cat("• Examine system-level factors across different income settings\n")
+}
 cat("• Develop targeted intervention studies\n")
 
 # Files created
@@ -725,13 +957,26 @@ output_files <- c(
   "pediatric_burnout_cumulative_analysis.csv"
 )
 
+# Add COVID and income files if created
+if(!is.null(meta_reg_covid)) {
+  output_files <- c(output_files, 
+                   "forest_plot_covid_detailed.pdf",
+                   "covid_comparison_ggplot.pdf")
+}
+if(!is.null(meta_reg_income)) {
+  output_files <- c(output_files,
+                   "forest_plot_income_detailed.pdf",
+                   "income_comparison_ggplot.pdf")
+}
+
 for(file in output_files) {
   cat("  •", file, "\n")
 }
 
 # Save final workspace
-save.image("pediatric_burnout_complete_analysis.RData")
+save.image("outputs/pediatric_burnout_complete_analysis.RData")
 
 cat("\n🎉 PART 2: ADVANCED META-ANALYSIS COMPLETED SUCCESSFULLY!\n")
 cat("🚀 All files saved and ready for publication/presentation\n")
 cat("📊 Repository ready for Git version control\n")
+cat("\n✨ NEW: COVID and Income Level analyses included with visualizations!\n")
